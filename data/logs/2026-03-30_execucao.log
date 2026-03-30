@@ -3,3 +3,23 @@
 2026-03-30 18:57:12,374 - INFO - AFC is enabled with max remote calls: 10.
 2026-03-30 18:57:25,059 - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
 2026-03-30 18:57:25,061 - INFO - Análise concluída! Veja o resultado em: data/output/analise_tecnica.md
+2026-03-30 19:10:01,243 - INFO - Lendo os arquivos do repositório: data/raw
+2026-03-30 19:11:43,465 - INFO - Lendo os arquivos do repositório: data/raw
+2026-03-30 19:11:43,466 - INFO - Arquivo lido com sucesso: hello_world.py
+2026-03-30 19:11:43,466 - INFO - Arquivo lido com sucesso: name.py
+2026-03-30 19:11:43,466 - INFO - Arquivo lido com sucesso: simple_calculator.py
+2026-03-30 19:11:43,467 - INFO - Analisando 3 arquivos com LLM...
+2026-03-30 19:11:44,088 - INFO - Enviando prompt estruturado para o modelo...
+2026-03-30 19:11:44,095 - INFO - AFC is enabled with max remote calls: 10.
+2026-03-30 19:11:56,062 - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-03-30 19:11:56,064 - INFO - Análise concluída! Veja o resultado em: data/output/analise_tecnica.md
+2026-03-30 19:15:00,324 - INFO - Lendo os arquivos do repositório: data/raw
+2026-03-30 19:15:00,325 - INFO - Arquivo lido com sucesso: src\main.py
+2026-03-30 19:15:00,326 - INFO - Arquivo lido com sucesso: src\core\analyzer.py
+2026-03-30 19:15:00,326 - INFO - Arquivo lido com sucesso: src\utils\logger.py
+2026-03-30 19:15:00,327 - INFO - Arquivo lido com sucesso: src\utils\reader.py
+2026-03-30 19:15:00,327 - INFO - Analisando 4 arquivos com LLM...
+2026-03-30 19:15:00,944 - INFO - Enviando prompt estruturado para o modelo...
+2026-03-30 19:15:00,950 - INFO - AFC is enabled with max remote calls: 10.
+2026-03-30 19:15:21,286 - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-03-30 19:15:21,288 - INFO - Análise concluída! Veja o resultado em: data/output/analise_tecnica.md
