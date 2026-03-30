@@ -3,4 +3,5 @@ __pycache__/
 *.pyc
 .vscode/
 venv/
-data/output/*
+data/raw/
+data/logs/
