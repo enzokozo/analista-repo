@@ -1,8 +1,9 @@
 import os
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
 from utils.logger import logger
+from utils.tools import salvar_nota_tecnica
 
 # Carrega as variáveis do arquivo .env
 load_dotenv()
@@ -10,13 +11,16 @@ load_dotenv()
 class CodeAnalyzer:
     def __init__(self):
         # Incializa o modelo (gemini-1.0-pro)
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash",
+        modelo_base = ChatGoogleGenerativeAI(model="gemini-2.5-flash",
                                           temperature=0,
                                           google_api_key=os.getenv("GOOGLE_API_KEY")
                                           )
         
         # Inicializa a memória de mensagens
         self.chat_history = []
+
+        # Conecta a ferramenta ao modelo
+        self.llm = modelo_base.bind_tools([salvar_nota_tecnica])
 
     def iniciar_sessao(self, repo_data):
         """
@@ -63,8 +67,31 @@ class CodeAnalyzer:
             resposta = self.llm.invoke(self.chat_history)
 
             # Guarda a resposta do modelo na memória
-            self.chat_history.append(AIMessage(content=resposta.content))
+            self.chat_history.append(resposta)
+
+            # Caso o modelo decida usar a ferramenta
+            if resposta.tool_calls:
+                for tool_call in resposta.tool_calls:
+                    logger.info(f"Modelo decidiu usar a ferramenta {tool_call['name']}")
+
+                    if tool_call["name"] == "salvar_nota_tecnica":
+                        # Executa o código da ferramenta
+                        resultado_ferramenta = salvar_nota_tecnica.invoke(tool_call["args"])
+
+                        # Devolve o resultado da execução para o modelo ler
+                        mensagem_resultado = ToolMessage(
+                            content=resultado_ferramenta, tool_call_id=tool_call["id"]
+                        )
+                        self.chat_history.append(mensagem_resultado)
+
+                # O modelo formula a resposta final após usar a ferramenta
+                resposta_final = self.llm.invoke(self.chat_history)
+                self.chat_history.append(resposta_final)
+                return resposta_final.content
             
+            # Se o modelo não usou nenhuma ferramenta, retorna a resposta normalmente
+            return resposta.content
+                
             return resposta.content
         except Exception as e:
             logger.error(f"Falha de comunicação com o modelo: {e}")
