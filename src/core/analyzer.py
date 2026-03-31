@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
 from utils.logger import logger
-from utils.tools import salvar_nota_tecnica
+from utils.tools import salvar_nota_tecnica, executar_codigo_python
 
 # Carrega as variáveis do arquivo .env
 load_dotenv()
@@ -19,8 +19,8 @@ class CodeAnalyzer:
         # Inicializa a memória de mensagens
         self.chat_history = []
 
-        # Conecta a ferramenta ao modelo
-        self.llm = modelo_base.bind_tools([salvar_nota_tecnica])
+        # Conecta as ferramentas ao modelo
+        self.llm = modelo_base.bind_tools([salvar_nota_tecnica, executar_codigo_python])
 
     def iniciar_sessao(self, repo_data):
         """
@@ -41,10 +41,14 @@ class CodeAnalyzer:
 
             # SystemMessage é a mensagem de configuração do modelo
             instrucao_sistema = (
-                "Você é um Engenheiro de Software Sênior e um Assistente Especialista neste repositório. "
+                "Você é um Agente Autônomo de Análise de Código, Dados e Engenharia de Software. "
                 "Use estritamente o código fornecido abaixo como sua base de conhecimento para responder às perguntas do usuário. "
                 "Se a resposta não estiver no código, diga que não encontrou nos arquivos fornecidos.\n\n"
-                f"REPOSITÓRIO:\n{context}"    
+                "Você possui ferramentas para salvar relatórios e para executar código Python localmente. "
+                "Se o usuário pedir para analisar planilhas (CSVs) ou fazer cálculos complexos, ESCREVA E EXECUTE um código Python usando a ferramenta 'executar_codigo_python'. "
+                "Sempre importe as bibliotecas necessárias no seu código (ex: import pandas as pd). "
+                f"\n\nARQUIVOS ATUAIS LIDOS COMO TEXTO:\n{context}"
+                f"\n\nREPOSITÓRIO:\n{context}"    
             )
 
             # A primeira coisa da memória é o contexto do repositório
@@ -76,11 +80,14 @@ class CodeAnalyzer:
 
                     if tool_call["name"] == "salvar_nota_tecnica":
                         # Executa o código da ferramenta
-                        resultado_ferramenta = salvar_nota_tecnica.invoke(tool_call["args"])
+                        resultado = salvar_nota_tecnica.invoke(tool_call["args"])
+                    elif tool_call["name"] == "executar_codigo_python":
+                        resultado = executar_codigo_python.invoke(tool_call["args"])
 
                         # Devolve o resultado da execução para o modelo ler
                         mensagem_resultado = ToolMessage(
-                            content=resultado_ferramenta, tool_call_id=tool_call["id"]
+                            content=resultado,
+                            tool_call_id=tool_call["id"]
                         )
                         self.chat_history.append(mensagem_resultado)
 
