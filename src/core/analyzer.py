@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from utils.logger import logger
 
 # Carrega as variáveis do arquivo .env
@@ -14,12 +14,14 @@ class CodeAnalyzer:
                                           temperature=0,
                                           google_api_key=os.getenv("GOOGLE_API_KEY")
                                           )
+        
+        # Inicializa a memória de mensagens
+        self.chat_history = []
 
-    def generate_summary(self, repo_data):
+    def iniciar_sessao(self, repo_data):
         """
-        Recebe o dicionário de arquivos e gera uma explicação técnica.
+        Pega todos os arquivos e injeta como uma instrução de sistema oculta.
         """
-
         try:
             # Prepara o contexto: transformammos o dicionário em uma string formatada
             context = ""
@@ -28,24 +30,42 @@ class CodeAnalyzer:
 
             # Limita a quantidade de caracteres
             LIMITE_CARACTERES = 10000
+
             if len(context) > LIMITE_CARACTERES:
                 logger.warning(f"Contexto gigante detectado: {len(context)} caracteres. Truncando para evitar error na API...")
                 context = context[:LIMITE_CARACTERES] + "\n\n... [CÓDIGO TRUNCADO POR SEGURANÇA] ..."
 
-            # Cria o "Template de Prompt" que será o guia de como o modelo deve responder
-            prompt = ChatPromptTemplate.from_messages([
-                ("system", "Você é um Engenheiro de Software Sênior especialista em análise de sistemas."),
-                ("user", "Analise a estrutura deste repositório e faça um resumo técnico explicando o que cada arquivo faz e como eles se conectam:\n\n{codigo}")
-            ])
+            # SystemMessage é a mensagem de configuração do modelo
+            instrucao_sistema = (
+                "Você é um Engenheiro de Software Sênior e um Assistente Especialista neste repositório. "
+                "Use estritamente o código fornecido abaixo como sua base de conhecimento para responder às perguntas do usuário. "
+                "Se a resposta não estiver no código, diga que não encontrou nos arquivos fornecidos.\n\n"
+                f"REPOSITÓRIO:\n{context}"    
+            )
 
-            logger.info("Enviando prompt estruturado para o modelo...")
-
-            # "Chain" une o prompt ao modelo
-            chain = prompt | self.llm
-
-            # Invoca a cadeia, passando o contexto formatado, e obtemos a resposta
-            response = chain.invoke({"codigo": context})
-            return response.content
+            # A primeira coisa da memória é o contexto do repositório
+            self.chat_history = [SystemMessage(content=instrucao_sistema)]
+            logger.info("Sessão iniciada com o contexto do repositório injetado na memória.")
         except Exception as e:
-            logger.error(f"Falha de comunicação com o modelo: {str(e)}")
-            return f"Erro ao gerar análise: {str(e)}."
+            logger.error(f"Erro ao iniciar sessão: {e}")
+            raise
+
+    def fazer_pergunta(self, pergunta_usuario):
+        """
+        Recebe a pergunta do usuário, adiciona à memória e gera a resposta usando o modelo.
+        """
+
+        try:
+            # Adiciona a pergunta do usuário na memória
+            self.chat_history.append(HumanMessage(content=pergunta_usuario))
+
+            # Passa o histórico completo para o modelo gerar a resposta (repositório + perguntas anteriores + nova pergunta)
+            resposta = self.llm.invoke(self.chat_history)
+
+            # Guarda a resposta do modelo na memória
+            self.chat_history.append(AIMessage(content=resposta.content))
+            
+            return resposta.content
+        except Exception as e:
+            logger.error(f"Falha de comunicação com o modelo: {e}")
+            return "Desculpe, ocorreu um erro ao tentar obter a resposta do modelo. Por favor, tente novamente mais tarde."
